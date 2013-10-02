@@ -169,7 +169,6 @@ Line.prototype.draw = function (context)
         context.beginPath();
         context.moveTo(this.startX, this.startY);
         context.lineTo(this.endX, this.endY);
-        context.closePath();
         context.stroke();
     }
 };
@@ -223,19 +222,21 @@ Container.prototype.draw = function (context)
         context.save();         
         context.beginPath();
         context.rect(this.left,this.top,this.width,this.height);
-        
+
         //Draw container
-        context.lineWidth   = this.borderWidth;
-        context.strokeStyle = this.borderColor;
-        context.stroke();
+        if (this.borderWidth)
+        {
+            context.lineWidth   = this.borderWidth;
+            context.strokeStyle = this.borderColor;
+            context.stroke();
+        }
         if (this.fill)      //Fill container if necessary
         {
             context.fillStyle = this.fill;
             context.fill();
         }
         context.clip();
-        
-        
+   
         //Draw container children
         for (var i = 0; i < this.children.length; i++)
         {
@@ -243,10 +244,9 @@ Container.prototype.draw = function (context)
             this.children[i].top += this.top;
             this.children[i].clipRegion = {'x': this.left, 'y': this.top, 'width': this.width, 'height': this.height};
             this.children[i].draw(context);
+            console.log(this.children[i])
         }
  
-        
-        
         //Remove container clipping region
         context.restore();
     }

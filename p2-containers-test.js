@@ -69,7 +69,7 @@ window.onload = function () {
 		height: 400,
 		left: 400,
 		top: 400,
-		borderWidth: 0
+		borderWidth: 0,
 	});
     for(var i = 0; i < 10; i++) {
         var newRot = new Container({ 
@@ -83,7 +83,6 @@ window.onload = function () {
         newRot.children.push( new Text({  left: 20, height: 17, fill: "white", content: "" + i }));
         multiRotContainer.children.push(newRot);
     }
-
 
     root.children = [rotContainer1, multiRotContainer,imgFrameFrame];
     root.draw();
