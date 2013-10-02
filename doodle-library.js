@@ -40,7 +40,12 @@ function Drawable (attrs)
         visible: true,
     };
     attrs = mergeWithDefault(attrs, dflt);
-    this.attrs = attrs;
+    
+    //Add property fields to drawable object
+    for (var attribute in attrs)
+    {
+        this[attribute] = attrs[attribute];
+    }
 }
 
 /*
@@ -49,13 +54,7 @@ function Drawable (attrs)
  */
 Drawable.prototype.draw = function(context)
 {
-    //Pass in attributes to context object
-    for (var attribute in this.attrs)
-    {
-        context[attribute] = this.attrs[attribute];
-    }
-
-    //Draw drawable to screen
+    console.log("ERROR: Calling unimplemented draw method on drawable object.");
 };
 
 
@@ -64,19 +63,14 @@ Drawable.prototype.draw = function(context)
  */
 function Primitive(attrs)
 {
-    var dflt = 
-    {
+    var dflt = {
         lineWidth: 1,
         color: "black"
     };
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
-    for (var property in attrs)
-    {
-        this[property] = attrs[property];
-    }
-    //this.lineWidth = attrs.lineWidth;
-    //this.color = attrs.color;
+    this.lineWidth = attrs.lineWidth;
+    this.color = attrs.color;
 }
 Primitive.inheritsFrom(Drawable);
 
@@ -92,28 +86,21 @@ function Text(attrs)
     };
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
-    
-    for (var property in attrs)
-    {
-        this[property] = attrs[property];
-    }
-    // this.content = attrs.content;
-    // this.fill = attrs.fill;
-    // this.font = attrs.font;
-    // this.height = attrs.height;
-    
 }
 Text.inheritsFrom(Drawable);
 
 Text.prototype.draw = function (context)
 {
-    for (var property in this.attrs)
-    {
-        context[property] = this[property];
-    }
-    console.log(this);
-    context.fillText(this.content, this.left, this.top);
-    console.log(context);
+    //Set correct font property of context
+    var font_array = this.font.split(" ");
+    font_array[font_array.length - 2] = this.height + "pt";
+    context.font = font_array.join(" ");
+    //Set text property of context
+    context.content = this.content;     
+    //Set text color property of context
+    context.fillStyle = this.fill;      
+    //Draw context
+    context.fillText(this.content, this.left, this.top+this.height); 
 };
 
 function DoodleImage(attrs)

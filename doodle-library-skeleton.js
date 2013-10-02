@@ -10,81 +10,57 @@
 
 /*
  * Root container for all drawable elements.
-   Function: hold and draw all the elements in the doodle
  */
-function Doodle (context)
-{
+function Doodle (context) {
     this.context = context;
     this.children = [];
 }
 
-Doodle.prototype.draw = function()
-{
-	//Draw all children
-    for(var i = 0; i < this.children.length; i++)
-    {
-        this.children[i].draw();
-    }
+Doodle.prototype.draw = function() {
+	// Your draw code here
 };
 
 
 /* Base class for all drawable objects.
  * Do not modify this class!
  */
-function Drawable (attrs)
-{
-    var dflt =
-    { 
+function Drawable (attrs) {
+    var dflt = { 
         left: 0,
         top: 0,
         visible: true,
     };
     attrs = mergeWithDefault(attrs, dflt);
-    this.attrs = attrs;
+    // constructor code here
 }
 
 /*
  * Summary: Uses the passed in context object (passed in by a doodle object)
  * to draw itself.
  */
-Drawable.prototype.draw = function(context)
-{
-    //Pass in attributes to context object
-    for (var attribute in this.attrs)
-    {
-        context[attribute] = this.attrs[attribute];
-    }
-
-    //Draw drawable to screen
+Drawable.prototype.draw = function(context) {
+    console.log("ERROR: Calling unimplemented draw method on drawable object.");
 };
 
 
 /* Base class for objects that cannot contain child objects.
  * Do not modify this class!
  */
-function Primitive(attrs)
-{
-    var dflt = 
-    {
+function Primitive(attrs) {
+    var dflt = {
         lineWidth: 1,
         color: "black"
     };
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
-    for (var property in attrs)
-    {
-        this[property] = attrs.property;
-    }
-    //this.lineWidth = attrs.lineWidth;
-    //this.color = attrs.color;
+    this.lineWidth = attrs.lineWidth;
+    this.color = attrs.color;
 }
 Primitive.inheritsFrom(Drawable);
 
 
-function Text(attrs)
-{
-    var dflt = 
-    {
+function Text(attrs) {
+    var dflt = {
         content: "",
         fill: "black",
         font: "12pt Helvetica",
@@ -93,31 +69,16 @@ function Text(attrs)
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
     
-    for (var property in attrs)
-    {
-        this[property] = attrs.property;
-    }
-    // this.content = attrs.content;
-    // this.fill = attrs.fill;
-    // this.font = attrs.font;
-    // this.height = attrs.height;
-    
+    // add constructor code here
 }
 Text.inheritsFrom(Drawable);
 
-Text.prototype.draw = function (context)
-{
-    for (var property in this)
-    {
-        context[property] = this.property;
-    }
-    context.fillText(this.content, this.left, this.top);
+Text.prototype.draw = function (c) {
+    // your draw code here
 };
 
-function DoodleImage(attrs)
-{
-    var dflt =
-    {
+function DoodleImage(attrs) {
+    var dflt = {
         width: -1,
         height: -1,
         src: "",
@@ -125,28 +86,12 @@ function DoodleImage(attrs)
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
     
-	for (var property in attrs)
-    {
-        this[property] = attrs.property;
-    }
-
+	// rest of constructor code here
 }
 DoodleImage.inheritsFrom(Drawable);
 
-DoodleImage.prototype.draw = function (context)
-{
-    var img = new Image();
-    for (var property in this)
-    {
-        if (property != 'src')
-            context[property] = this.property;
-    }
-    img.onload = function()
-    {
-        context.drawImage(img,this.left,this.top, this.width, this.height);
-    }
-    img.src = this.src;
-    
+DoodleImage.prototype.draw = function (context) {
+    // draw code here
 };
 
 
