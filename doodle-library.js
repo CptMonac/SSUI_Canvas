@@ -91,16 +91,13 @@ Text.inheritsFrom(Drawable);
 
 Text.prototype.draw = function (context)
 {
-    //Set correct font property of context
-    var font_array = this.font.split(" ");
-    font_array[font_array.length - 2] = this.height + "pt";
-    context.font = font_array.join(" ");
-    //Set text property of context
-    context.content = this.content;     
-    //Set text color property of context
-    context.fillStyle = this.fill;      
-    //Draw context
-    context.fillText(this.content, this.left, this.top+this.height); 
+    if (this.visible)
+    {
+        context.font = this.font;       //Set correct font property of context
+        context.content = this.content; //Set text property of context   
+        context.fillStyle = this.fill;  //Set text color property of context
+        context.fillText(this.content, this.left, this.top+this.height); //Draw context
+    }
 };
 
 function DoodleImage(attrs)
@@ -113,52 +110,73 @@ function DoodleImage(attrs)
     };
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
-    
-	for (var property in attrs)
-    {
-        this[property] = attrs[property];
-    }
 }
 DoodleImage.inheritsFrom(Drawable);
 
 DoodleImage.prototype.draw = function(context)
 {
-    var img = new Image();
-    for (var property in this)
+    if (this.visible)
     {
-        if ((property != 'src') && (context))
-            context[property] = this.property;
+        var img = new Image();
+        var imageObject = this;
+        img.src = this.src;
+        img.onload = function()
+        {
+            //Restore clipping region -- it was removed before the image loaded
+            context.save();
+            context.beginPath();
+            context.rect(imageObject.clipRegion.x, imageObject.clipRegion.y, imageObject.clipRegion.width, imageObject.clipRegion.height);
+            context.clip();
+
+            if ((imageObject.width != -1) && (imageObject.height != -1))
+                context.drawImage(img,imageObject.left,imageObject.top, imageObject.width, imageObject.height);
+            else
+                context.drawImage(img,imageObject.left,imageObject.top);
+
+            context.restore();
+        }
     }
-    img.onload = function()
-    {
-        context.drawImage(img,this.left,this.top, this.width, this.height);
-    }
-    //console.log(this);
-    img.src = this.src;
-    
 };
 
 
-function Line(attrs) {
+function Line(attrs)
+{
     var dflt = {
         startX: 0,
         startY: 0,
         endX: 0,
         endY: 0
     };
+
+    //Range checking
+    if (attrs['startX'] < 0)
+        attrs['startX'] = 0;
+    if (attrs['startY'] < 0)
+        attrs['startY'] = 0;
+    //Merge default parameters
     attrs = mergeWithDefault(attrs, dflt);
     Primitive.call(this, attrs);
-    
-    // your draw code here
 }
 Line.inheritsFrom(Primitive);
 
-Line.prototype.draw = function (context) {
-    // your draw code here
+Line.prototype.draw = function (context)
+{
+    if(this.visible)
+    {
+        //Draw line from start point to end point
+        context.strokeStyle= this.color;
+        context.lineWidth = this.lineWidth;
+        context.beginPath();
+        context.moveTo(this.startX, this.startY);
+        context.lineTo(this.endX, this.endY);
+        context.closePath();
+        context.stroke();
+    }
 };
 
 
-function Rectangle(attrs) {
+function Rectangle(attrs)
+{
     var dflt = {
         x: 0,
         y: 0,
@@ -167,16 +185,23 @@ function Rectangle(attrs) {
     };
     attrs = mergeWithDefault(attrs, dflt);
     Primitive.call(this, attrs);
-
-	// rest of constructor code here
 }
 Rectangle.inheritsFrom(Primitive);
 
-Rectangle.prototype.draw = function (context) {
-    // draw code here
+Rectangle.prototype.draw = function (context)
+{
+    if (this.visible)
+    {    
+        context.strokeStyle= this.color;
+        context.lineWidth = this.lineWidth;
+        context.beginPath();
+        context.rect(this.x,this.y,this.width,this.height);
+        context.stroke();
+    }
 };
 
-function Container(attrs) {
+function Container(attrs)
+{
     var dflt = {
         width: 100,
         height: 100,
@@ -187,11 +212,42 @@ function Container(attrs) {
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);    
     this.children = [];
-    
-    // rest of constructor code here.
 }
 Container.inheritsFrom(Drawable);
 
-Container.prototype.draw = function (context) {
-    // draw code here
+Container.prototype.draw = function (context)
+{
+    if (this.visible)
+    {   
+        //Create clipping region for container
+        context.save();         
+        context.beginPath();
+        context.rect(this.left,this.top,this.width,this.height);
+        
+        //Draw container
+        context.lineWidth   = this.borderWidth;
+        context.strokeStyle = this.borderColor;
+        context.stroke();
+        if (this.fill)      //Fill container if necessary
+        {
+            context.fillStyle = this.fill;
+            context.fill();
+        }
+        context.clip();
+        
+        
+        //Draw container children
+        for (var i = 0; i < this.children.length; i++)
+        {
+            this.children[i].left+= this.left;
+            this.children[i].top += this.top;
+            this.children[i].clipRegion = {'x': this.left, 'y': this.top, 'width': this.width, 'height': this.height};
+            this.children[i].draw(context);
+        }
+ 
+        
+        
+        //Remove container clipping region
+        context.restore();
+    }
 };
