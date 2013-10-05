@@ -15,39 +15,7 @@
 function Doodle (context)
 {
     this.context = context;              //Stores canvas context
-
     this.children = [];                  //Holds children doodles.
-    this.enableMouseFollow = false;      //Enables mouse follow movement for canvas children
-    var canvas = this.context.canvas;
-    var doodleObject = this;
-    canvas.addEventListener("mousemove",function(event)
-    {
-        if (doodleObject.enableMouseFollow)
-        {
-            var xcoordinate = event.clientX;
-            var ycoordinate = event.clientY;
-
-            for (var i = 0; i < doodleObject.children.length; i++)
-            {
-                if (doodleObject.children[i].enableMouseFollow)
-                {
-                    var x = doodleObject.children[i].top;
-                    var y = doodleObject.children[i].left;
-                    var width = doodleObject.children[i].width;
-                    var height = doodleObject.children[i].height;
-
-                    //Clear previous instance on canvas
-                    doodleObject.children[i].top= ycoordinate;
-                    doodleObject.children[i].left= xcoordinate;
-                    doodleObject.context.globalCompositeOperation = 'destination-out';
-                    doodleObject.context.fillStyle = 'rgba(0,0,0,0.2)';
-                    doodleObject.context.fillRect(0,0,this.width,this.height);
-                    doodleObject.context.globalCompositeOperation = 'lighter';
-                    doodleObject.children[i].draw(doodleObject.context);
-                }
-            }
-        }
-    });
 }
 
 Doodle.prototype.draw = function()
@@ -69,7 +37,6 @@ function Drawable (attrs)
         left: 0,
         top: 0,
         visible: true,
-        enableMouseFollow: false
     };
     attrs = mergeWithDefault(attrs, dflt);
     
@@ -138,6 +105,7 @@ function DoodleImage(attrs)
         width: -1,
         height: -1,
         src: "",
+        callback: false
     };
     attrs = mergeWithDefault(attrs, dflt);
     Drawable.call(this, attrs);
@@ -150,7 +118,7 @@ DoodleImage.prototype.draw = function(context)
     {
         var img = new Image();
         var imageObject = this;
-        img.src = this.src;
+        img.crossOrigin = 'anonymous';      //Fix cross-domain image loading error
         img.onload = function()
         {
             //Restore clipping region -- it was removed before the image loaded
@@ -162,13 +130,19 @@ DoodleImage.prototype.draw = function(context)
                 context.clip();
             }
 
+            //Draw image
             if ((imageObject.width != -1) && (imageObject.height != -1))
                 context.drawImage(img,imageObject.left,imageObject.top, imageObject.width, imageObject.height);
             else
                 context.drawImage(img,imageObject.left,imageObject.top);
 
+            //Fire callback function if any included
+            if (imageObject.callback)
+                imageObject.callback();
+
             context.restore();
         }
+        img.src = this.src;
     }
 };
 
