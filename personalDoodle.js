@@ -9,6 +9,9 @@ function initialize()
     window.applyEffect = false;
     window.explode = false;
     window.randomParticles = [];
+    window.wiggleX = 2;
+    window.wiggleY = 12;
+    window.explodeCount = 0;
 
     //Configure canvas to fill browser window dynamically
     window.addEventListener('resize', reloadCanvas, false);
@@ -58,8 +61,6 @@ function reloadCanvas()
     doodle.children.push(logoText);
     doodle.children.push(logoImage);
     doodle.draw();
-    //createParticulate();
-    //drawCanvas();
 }
 
 function onImageLoad()
@@ -81,6 +82,7 @@ function onMouseMove(event)
         {
             drawCanvas();
             applyEffect = false;
+            explode = false;
         }, 70);
     }
 }
@@ -94,7 +96,7 @@ function onMouseOut(event)
 
 function onMouseDown(event)
 {
-    if (!explode)
+    if ((!explode) && explodeCount < 1)
     {
         explode = true;
         for (var i = 0; i < particles.length; i++)
@@ -109,8 +111,8 @@ function onMouseDown(event)
         setTimeout(function()
         {
             drawCanvas();
-            explode = false;
         }, 70);
+        explodeCount++
     }
 }
 
@@ -144,6 +146,7 @@ function createParticulate()
             }
         }
     }
+    setInterval(drawCanvas, 250);
 }
 
 function drawCanvas()
@@ -152,10 +155,9 @@ function drawCanvas()
     context.clearRect(0, 0, canvasWidth, canvasHeight);
 
     //Draw background color
-    //context.fillStyle = '#f5f5f5';
-    context.fillStyle = '#231f20';
+    context.fillStyle = '#f5f5f5';
+    //context.fillStyle = '#231f20';
     context.fillRect(0,0, canvasWidth, canvasHeight);
-    //context.globalCompositeOperation = 'destination-out';
 
     var dx, dy, distance;
     var scale = 1;
@@ -166,6 +168,10 @@ function drawCanvas()
         particleArray = randomParticles;
     else
         particleArray = particles;
+    
+    context.globalCompositeOperation = "source-over";
+    context.fillStyle = "rgba(0,0,0,0.83)";
+    context.fillRect(0, 0, canvasWidth, 265);
     for (var i = 0, len = particleArray.length; i < len; i++)
     {
         var particle = particleArray[i];
@@ -181,10 +187,41 @@ function drawCanvas()
 
         //Draw particle
         context.beginPath();
+        
+        //Randomly perturbate particles
+        if (explode)
+        {
+            var finalPosition = particles[i];
+            if ((finalPosition.x > particle.x) && (finalPosition.y > particle.y))
+            {
+                particle.x+=wiggleY;
+                particle.y+=wiggleY;
+            }
+            else if ((finalPosition.x > particle.x) && (finalPosition.y < particle.y))
+            {
+                particle.x+=wiggleY;
+                particle.y-=wiggleY;
+            }
+            else if ((finalPosition.x < particle.x) && (finalPosition.y > particle.y))
+            {
+                particle.x-=wiggleY;
+                particle.y+=wiggleY;
+            }
+            else if ((finalPosition.x < particle.x) && (finalPosition.y < particle.y))
+            {
+                particle.x-=wiggleY;
+                particle.y-=wiggleY;
+            }
+        }
+        else
+            particle.x += Math.random()* wiggleX;
+
         context.arc(particle.x, particle.y, 1.6* scale, 0, Math.PI * 2, true);
         context.closePath();
         context.fill();
     }
+    if (!explode)   //Reverse wiggle direction
+        wiggleX*= -1;
 }
 
 window.onload = initialize;
