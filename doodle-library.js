@@ -14,8 +14,40 @@
  */
 function Doodle (context)
 {
-    this.context = context;
-    this.children = [];
+    this.context = context;              //Stores canvas context
+
+    this.children = [];                  //Holds children doodles.
+    this.enableMouseFollow = false;      //Enables mouse follow movement for canvas children
+    var canvas = this.context.canvas;
+    var doodleObject = this;
+    canvas.addEventListener("mousemove",function(event)
+    {
+        if (doodleObject.enableMouseFollow)
+        {
+            var xcoordinate = event.clientX;
+            var ycoordinate = event.clientY;
+
+            for (var i = 0; i < doodleObject.children.length; i++)
+            {
+                if (doodleObject.children[i].enableMouseFollow)
+                {
+                    var x = doodleObject.children[i].top;
+                    var y = doodleObject.children[i].left;
+                    var width = doodleObject.children[i].width;
+                    var height = doodleObject.children[i].height;
+
+                    //Clear previous instance on canvas
+                    doodleObject.children[i].top= ycoordinate;
+                    doodleObject.children[i].left= xcoordinate;
+                    doodleObject.context.globalCompositeOperation = 'destination-out';
+                    doodleObject.context.fillStyle = 'rgba(0,0,0,0.2)';
+                    doodleObject.context.fillRect(0,0,this.width,this.height);
+                    doodleObject.context.globalCompositeOperation = 'lighter';
+                    doodleObject.children[i].draw(doodleObject.context);
+                }
+            }
+        }
+    });
 }
 
 Doodle.prototype.draw = function()
@@ -27,7 +59,6 @@ Doodle.prototype.draw = function()
     }
 };
 
-
 /* Base class for all drawable objects.
  * Do not modify this class!
  */
@@ -38,6 +69,7 @@ function Drawable (attrs)
         left: 0,
         top: 0,
         visible: true,
+        enableMouseFollow: false
     };
     attrs = mergeWithDefault(attrs, dflt);
     
@@ -56,7 +88,6 @@ Drawable.prototype.draw = function(context)
 {
     console.log("ERROR: Calling unimplemented draw method on drawable object.");
 };
-
 
 /* Base class for objects that cannot contain child objects.
  * Do not modify this class!
@@ -123,10 +154,13 @@ DoodleImage.prototype.draw = function(context)
         img.onload = function()
         {
             //Restore clipping region -- it was removed before the image loaded
-            context.save();
-            context.beginPath();
-            context.rect(imageObject.clipRegion.x, imageObject.clipRegion.y, imageObject.clipRegion.width, imageObject.clipRegion.height);
-            context.clip();
+            if (imageObject.clipRegion !== undefined)
+            { 
+                context.save();
+                context.beginPath();
+                context.rect(imageObject.clipRegion.x, imageObject.clipRegion.y, imageObject.clipRegion.width, imageObject.clipRegion.height);
+                context.clip();
+            }
 
             if ((imageObject.width != -1) && (imageObject.height != -1))
                 context.drawImage(img,imageObject.left,imageObject.top, imageObject.width, imageObject.height);
@@ -244,7 +278,6 @@ Container.prototype.draw = function (context)
             this.children[i].top += this.top;
             this.children[i].clipRegion = {'x': this.left, 'y': this.top, 'width': this.width, 'height': this.height};
             this.children[i].draw(context);
-            console.log(this.children[i])
         }
  
         //Remove container clipping region
