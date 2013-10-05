@@ -7,6 +7,8 @@ function initialize()
     window.canvasHeight = 700;
     window.mouse = {x:0, y:0};
     window.applyEffect = false;
+    window.explode = false;
+    window.randomParticles = [];
 
     //Configure canvas to fill browser window dynamically
     window.addEventListener('resize', reloadCanvas, false);
@@ -25,7 +27,9 @@ function reloadCanvas()
     canvas.width  = canvasWidth;
     canvas.height = canvasHeight;
     canvas.addEventListener('mousemove', onMouseMove, false);
-    canvas.addEventListener(' mouseout', onMouseOut,  false );
+    canvas.addEventListener('mouseout', onMouseOut,  false );
+    canvas.addEventListener('mousedown', onMouseDown, false);
+    //canvas.addEventListener('mouseup', onMouseRelease, false);
 
     //Create background canvas
     window.bgCanvas  = document.createElement('canvas');
@@ -72,7 +76,7 @@ function onMouseMove(event)
     if (!applyEffect)
     {
         applyEffect = true;
-        //Draw in 70ms intervals
+        //Draw after 70ms 
         window.drawTimeout = setTimeout(function()
         {
             drawCanvas();
@@ -87,6 +91,30 @@ function onMouseOut(event)
     clearTimeout(drawTimeout);
     drawCanvas();
 }
+
+function onMouseDown(event)
+{
+    if (!explode)
+    {
+        explode = true;
+        for (var i = 0; i < particles.length; i++)
+        {
+            randomParticles.push({
+                        color: colors[Math.floor(Math.random()* colors.length)],
+                        x    : Math.floor(Math.random()* canvasWidth),
+                        y    : Math.floor(Math.random()* canvasHeight)
+                    });
+        }
+        //Explode after 70ms
+        setTimeout(function()
+        {
+            drawCanvas();
+            explode = false;
+        }, 70);
+    }
+}
+
+
 
 //Scan over pixel data in canvas element and create corresponding particles
 function createParticulate()
@@ -127,14 +155,20 @@ function drawCanvas()
     //context.fillStyle = '#f5f5f5';
     context.fillStyle = '#231f20';
     context.fillRect(0,0, canvasWidth, canvasHeight);
+    //context.globalCompositeOperation = 'destination-out';
 
     var dx, dy, distance;
     var scale = 1;
 
     //Draw previously stored particles
-    for (var i = 0, len = particles.length; i < len; i++)
+    var particleArray;
+    if (explode)
+        particleArray = randomParticles;
+    else
+        particleArray = particles;
+    for (var i = 0, len = particleArray.length; i < len; i++)
     {
-        var particle = particles[i];
+        var particle = particleArray[i];
         dx = particle.x - mouse.x;
         dy = particle.y - mouse.y;
 
