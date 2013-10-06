@@ -353,7 +353,7 @@ function drawCanvas()
     //Draw canvas objects
     if (window.implodeCount >= window.implodeIterations)
         window.animateImplosion = false;
-    if (window.explodeCount >= window.implodeIterations)
+    if (window.explodeCount >= window.implodeCount)
     {
         window.animateExplosion = false;
     }   
