@@ -1,40 +1,23 @@
 //Adapted from http://tympanus.net/codrops/2011/11/09/interactive-html5-typography/
-function initialize()
-{
-    //Initialize default parameters
-    window.particleDensity = 4;
-    window.canvasWidth = 700;
-    window.canvasHeight = 700;
-    window.mouse = {x:0, y:0};
-    window.applyEffect = false;
-    window.explode = false;
-    window.magnetizedParticles = [];
-    window.wiggleX = 2;
-    window.wiggleY = 12;
-    window.explodeCount = 0;
 
-    //Configure canvas to fill browser window dynamically on size change
-    //window.addEventListener('resize', initializeCanvas, false);
-
-    init();
-    //Draw canvas objects
-    //initializeCanvas();    
-}
-
+//Resets the canvas on window resize
 function resetCanvas()
 {
-    console.log('Window resize event...');
+    //Stop canvas update
+    window.clearInterval(window.timer);
     window.stateSequence.reset();
 }
 
-function init()
+//Initializes the doodle
+function initialize()
 {
     //Initialize default parameters
     window.particleDensity = 5;     //Initialize particle density 
     window.canvasWidth = 700;       //Initialize canvas width
     window.canvasHeight = 700;      //Initialize canvas height
-    window.mouse = {x:0, y:0};      //Initialize mouse location
+    window.mouse = {x:100, y:100};  //Initialize mouse location
     window.particles = [];          //Initialize container for particles
+    window.magnetizedParticles = [];//Initialize container for magnetized particles
     window.attractionStrength = 30; //Size of the pulsing magnetic field
     window.innercoreSize = 15;      //Size of the inner magnetic core
     window.mincoreSize = 10;        //Minimum size of the inner magnetic core
@@ -44,6 +27,8 @@ function init()
     window.pulseDirection = 'outward';
     window.innercorePulseRate = 0.2;
     window.outercorePulseRate = 1.0;
+    window.animateImplosion = false;
+    window.animateExplosion = false;
 
     //Configure canvas to fill browser window dynamically on size change
     window.addEventListener('resize', resetCanvas, false);
@@ -53,18 +38,18 @@ function init()
         events: [
         { name: 'startup', from: 'none', to: 'init'},
         { name: 'initiate', from: 'init', to: 'rest'},
-        { name: 'explode',from: 'rest',  to: 'capture' },
-        { name: 'implode', from: 'capture', to: 'rest'},
-        { name: 'reset', from: ['rest', 'capture', 'release'], to: 'init'}
+        { name: 'implode',from: 'rest',  to: 'capture' },
+        { name: 'explode', from: 'capture', to: 'rest'},
+        { name: 'reset', from: ['rest', 'capture', 'init'], to: 'init'}
     ]});
     stateSequence.oninit = initializeCanvas;
-    stateSequence.onexplode = null;
-    stateSequence.onimplode = null;
     stateSequence.onrest = updateCanvas;
     stateSequence.oncapture = updateCanvas;
+    stateSequence.onreset = resetCanvas;
     stateSequence.startup();
 }
 
+//Initializes the canvas for the doodle
 function initializeCanvas(event, from, to, params)
 {
     //Get canvas reference and initialize sizes
@@ -97,7 +82,7 @@ function initializeCanvas(event, from, to, params)
 
     //Load logo image and text onto canvas
     var doodle = new Doodle(bgContext);
-    var logoFont = '190px Sancreek';
+    var logoFont = '190px Prociono';
     var logoContent = 'Ayo Olubeko';
     bgContext.font = logoFont;
     var contentWidth = bgContext.measureText(logoContent).width;
@@ -119,7 +104,7 @@ function initializeCanvas(event, from, to, params)
     doodle.draw();
 }
 
-//This function executes the draw function after the image is loaded.
+//Executes the draw function after the image is loaded.
 function onImageLoad()
 {
     createParticulate();        //Create particles from text data
@@ -127,10 +112,36 @@ function onImageLoad()
     stateSequence.initiate();   //Transition to next state
 }
 
+//Implements animation on the canvas
 function updateCanvas(event,from,to,params)
 {
     //Redraw canvas every 30ms
     window.timer = setInterval(drawCanvas, 30);
+    //console.log(event, from, to);
+    if (event == 'implode')
+    {
+        window.animateImplosion = true;
+        window.implodeCount = 0;
+        window.implodeIterations = 10;
+        window.implodingParticles = [];
+        var particle, dx, dy;
+
+        for (var i = 0; i < particles.length; i++)
+        {
+            implodingParticles[i] = particles[i];
+            particle = implodingParticles[i];   
+            //Calulate distance from mouse to particle
+            dx = particle.x - mouse.x;
+            dy = particle.y - mouse.y;
+            particle.xstep = Math.floor(dx/implodeIterations);
+            particle.ystep = Math.floor(dy/implodeIterations);
+        }
+    }
+    else if (event == 'explode')
+    {
+        window.animateExplosion = true;
+        window.explodeCount = 0;
+    }
 }
 
 //Updates mouse position on mouse movements
@@ -141,6 +152,7 @@ function onMouseMove(event)
     mouse.y = event.offsetY || (event.layerY - canvas.offsetTop);
 }
 
+//Triggers implode event on mouse down
 function onMouseDown(event)
 {
     //Error checking
@@ -153,27 +165,27 @@ function onMouseDown(event)
     //Stop canvas update
     window.clearInterval(window.timer);
     //Increase magnetic field strength
-    mincoreSize*=2;
-    maxcoreSize*=2;
-    attractionStrength = maxcoreSize;
-    var angleStep = ((2*Math.PI) / (particles.length));
+    mincoreSize = mincoreSize*2;
+    maxcoreSize = maxcoreSize*2;
+    var angleStep = ((2*Math.PI) / (particleContainer.length));
     var angle = 0;
-    for (var i = 0; i < particles.length; i++)
-        {
-            magnetizedParticles.push({
-                        color: colors[Math.floor(Math.random()* colors.length)],
-                        x    : Math.floor(mouse.x +(attractionStrength * Math.cos(angle))),
-                        y    : Math.floor(mouse.y +(attractionStrength * Math.sin(angle))),
-                        scale: 1,
-                        pulse: true,
-                        angle: angle
-                    });
-            angle+= angleStep;
-        }
+    magnetizedParticles = [];
+    for (var i = 0; i < particleContainer.length; i++)
+    {
+        magnetizedParticles.push({
+            color: colors[Math.floor(Math.random()* colors.length)],
+            x    : Math.floor(mouse.x +(attractionStrength * Math.cos(angle))),
+            y    : Math.floor(mouse.y +(attractionStrength * Math.sin(angle))),
+            scale: 1,
+            angle: angle
+        });
+        angle+= angleStep;
+    }
     //Perform state transition
-    stateSequence.explode();
+    stateSequence.implode();
 }
 
+//Triggers explode event on mouse release
 function onMouseRelease(event)
 {
     //Error checking
@@ -185,12 +197,14 @@ function onMouseRelease(event)
 
     //Stop canvas update
     window.clearInterval(window.timer);
+    //createParticulate();
     //Decrease magnetic field strength
-    mincoreSize/=2;
-    maxcoreSize/=2;
-    attractionStrength = maxcoreSize;
+    window.animateImplosion = false;
+    window.animateExplosion = true;
+    mincoreSize = mincoreSize/2;
+    maxcoreSize = maxcoreSize/2;
     //Perform state transition
-    stateSequence.implode();
+    stateSequence.explode();
 }
 
 //Scan over pixel data in canvas element and create corresponding particles
@@ -198,6 +212,7 @@ function createParticulate()
 {
     var pixel;
     var imageData = bgContext.getImageData(0,0, canvasWidth, canvasHeight).data;
+    particles = [];     //Initialize particles container
 
     //Iterate horizontally over all pixels
     for (var width = 0; width < canvasWidth; width+= particleDensity)
@@ -217,38 +232,48 @@ function createParticulate()
                     x    : width,
                     y    : height,
                     scale: 1,
-                    pulse: false,
-                    angle: null
+                    angle: undefined
                 });
             }
         }
     }
 }
 
+//Draws particles on the canvas
 function drawParticles()
 {
     var dx, dy, distance;       //Stores calculated distances
 
-    if (stateSequence.current == 'rest')
+    if (window.animateImplosion)
+    {
+        window.particleContainer = implodingParticles;
+        implodeCount++;
+    }
+    else if (window.animateExplosion)
+    {
+        window.particleContainer = implodingParticles;
+        explodeCount++;
+    }
+    else if (stateSequence.current == 'rest')
         window.particleContainer = particles;
     else if (stateSequence.current == 'capture')
         window.particleContainer = magnetizedParticles;
         
     //Draw all particles in container
-    for (var i = 0, len = particleContainer.length; i < len; i++)
+    for (var i = 0, len = window.particleContainer.length; i < len; i++)
     {
         var particle = particleContainer[i];
-        //Calulate distance from mouse to particle
-        dx = particle.x - mouse.x;
-        dy = particle.y - mouse.y;
-        distance = Math.sqrt((dx*dx) + (dy*dy));
-
-        //Apply interactive effect
-        if (distance <= attractionStrength)
-            particle.pulse = true;
-        else
-            particle.scale = Math.max(Math.min(10 - (distance/10), 5), 1);
         
+        if (particle.angle == undefined)
+        {
+            //Calulate distance from mouse to particle
+            dx = particle.x - (mouse.x + Math.random()*attractionStrength);
+            dy = particle.y - (mouse.y + Math.random()*attractionStrength);
+            distance = Math.sqrt((dx*dx) + (dy*dy));
+            //Apply interactive effect
+            particle.scale = Math.max(Math.min(10 - (distance/10), 5), 1);
+        }
+
         //Draw particle
         context.beginPath();
         context.fillStyle = particle.color;
@@ -257,10 +282,20 @@ function drawParticles()
         context.fill();
 
         //Update particle position if needed
-        if (particle.angle != null)
+        if (particle.angle != undefined)
         {
-            particle.x = Math.floor(mouse.x +(attractionStrength * Math.cos(particle.angle)));
-            particle.y = Math.floor(mouse.y +(attractionStrength * Math.sin(particle.angle)));
+            particle.x = Math.floor(mouse.x +(attractionStrength*1.6 * Math.cos(particle.angle)));
+            particle.y = Math.floor(mouse.y +(attractionStrength*1.6 * Math.sin(particle.angle)));
+        }
+        else if (animateImplosion)
+        {
+            particle.x-= particle.xstep;
+            particle.y-= particle.ystep;
+        }
+        else if (animateExplosion)
+        {
+            particle.x+= particle.xstep;
+            particle.y+= particle.ystep;
         }
     }
 }
@@ -283,14 +318,6 @@ function drawPulseAction()
         {    
             innercoreSize+=innercorePulseRate;
             attractionStrength+=outercorePulseRate;
-
-            //Configure pulsing particle action
-            for (var i = 0; i < particleContainer.length; i++)
-            {
-                if (particleContainer[i].pulse)
-                    particleContainer[i].scale+=innercorePulseRate;
-            }
-
         }
         else
             pulseDirection = 'inward';
@@ -302,19 +329,13 @@ function drawPulseAction()
             innercoreSize-=innercorePulseRate;
             if (attractionStrength > 10)
                 attractionStrength-=outercorePulseRate;
-
-            //Configure pulsing particle action
-            for (var i = 0; i < particleContainer.length; i++)
-            {
-                if (particleContainer[i].pulse)
-                    particleContainer[i].scale-=innercorePulseRate;
-            }
         }
         else
             pulseDirection = 'outward';
     }
 }
 
+//Draws the canvas and its associated children
 function drawCanvas()
 {
     //Initialize drawing canvas
@@ -330,6 +351,12 @@ function drawCanvas()
     context.fillRect(0, 0, canvasWidth, 265);
 
     //Draw canvas objects
+    if (window.implodeCount >= window.implodeIterations)
+        window.animateImplosion = false;
+    if (window.explodeCount >= window.implodeIterations)
+    {
+        window.animateExplosion = false;
+    }   
     if (stateSequence.current != 'init')
     {
         drawParticles();
@@ -337,7 +364,7 @@ function drawCanvas()
         if (stateSequence.current == 'capture') //Draw stroked text
         {
             context.save();
-            context.font = '170px Sancreek';
+            context.font = '170px Prociono';
             context.strokeText('Ayo Olubeko',10,220);
             context.scale(window.xscale, window.yscale);
             context.restore();
