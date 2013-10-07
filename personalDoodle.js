@@ -29,6 +29,7 @@ function initialize()
     window.outercorePulseRate = 1.0;
     window.animateImplosion = false;
     window.animateExplosion = false;
+    window.cursorRed = false;
 
     //Configure canvas to fill browser window dynamically on size change
     window.addEventListener('resize', resetCanvas, false);
@@ -148,9 +149,12 @@ function updateCanvas(event,from,to,params)
 //Updates mouse position on mouse movements
 function onMouseMove(event)
 {
-    //Set the mouse position relative to the canvas container element.
-    mouse.x = event.offsetX || (event.layerX - canvas.offsetLeft);
-    mouse.y = event.offsetY || (event.layerY - canvas.offsetTop);
+    if (stateSequence.current != 'capture')
+    {
+        //Set the mouse position relative to the canvas container element.
+        mouse.x = event.offsetX || (event.layerX - canvas.offsetLeft);
+        mouse.y = event.offsetY || (event.layerY - canvas.offsetTop);
+    }
 }
 
 //Triggers implode event on mouse down
@@ -305,8 +309,16 @@ function drawParticles()
 function drawPulseAction()
 {
     var gradient = context.createRadialGradient(mouse.x,mouse.y,innercoreSize,mouse.x,mouse.y,attractionStrength);
-    gradient.addColorStop(0, 'rgba(240,0,0,0.9)');
-    gradient.addColorStop(1, 'rgba(230,0,0,0.4)');
+    if (window.cursorRed)
+    {
+        gradient.addColorStop(0, 'rgba(240,0,0,0.9)');
+        gradient.addColorStop(1, 'rgba(230,0,0,0.4)');
+    }
+    else
+    {
+        gradient.addColorStop(0, 'rgba(0,0,240,0.9)');
+        gradient.addColorStop(1, 'rgba(0,0,230,0.3)');
+    }
     context.beginPath();
     context.fillStyle = gradient;
     context.arc(mouse.x,mouse.y,window.attractionStrength*1.6,0,Math.PI * 2,true);
@@ -354,9 +366,19 @@ function drawCanvas()
     //Draw canvas objects
     if (window.implodeCount >= window.implodeIterations)
         window.animateImplosion = false;
-    if (window.explodeCount >= window.implodeCount)
+    if ((window.explodeCount >= window.implodeCount) && (animateExplosion))
     {
         window.animateExplosion = false;
+        window.cursorRed = !(window.cursorRed);
+        var roseWoodColors = ['460201', '901f0f', 'a92205'];
+        var pantoneColors = ['d75c37','67727a', '6991ac', 'c3d7df'];
+        for (var i = 0; i < particles.length; i++)
+        {
+            if (window.cursorRed)
+                particles[i].color = roseWoodColors[Math.floor(Math.random()* roseWoodColors.length)];
+            else
+                particles[i].color = pantoneColors[Math.floor(Math.random()* pantoneColors.length)];
+        }
     }   
     if (stateSequence.current != 'init')
     {
