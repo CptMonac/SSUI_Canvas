@@ -37,6 +37,7 @@ function Drawable (attrs)
         left: 0,
         top: 0,
         visible: true,
+        theta: 0
     };
     attrs = mergeWithDefault(attrs, dflt);
     
@@ -94,7 +95,20 @@ Text.prototype.draw = function (context)
         context.font = this.font;       //Set correct font property of context
         context.content = this.content; //Set text property of context   
         context.fillStyle = this.fill;  //Set text color property of context
+        
+        //Rotate text if necessary
+        context.save();
+        if (this.theta != 0)
+        {
+            var contentWidth = context.measureText(this).width;
+            var centerx = this.left + (this.contentWidth/2);
+            var centery = this.top + (this.height/2);
+            context.translate(centerx, centery);
+            context.rotate(this.theta*Math.PI/180);
+            context.translate(-centerx, -centery);
+        }
         context.fillText(this.content, this.left, this.top+this.height); //Draw context
+        context.restore();
     }
 };
 
@@ -118,19 +132,27 @@ DoodleImage.prototype.draw = function(context)
     {
         var img = new Image();
         var imageObject = this;
-        img.crossOrigin = 'anonymous';      //Fix cross-domain image loading error
+        
         img.onload = function()
         {
             //Restore clipping region -- it was removed before the image loaded
+            context.save();
             if (imageObject.clipRegion !== undefined)
             { 
-                context.save();
                 context.beginPath();
                 context.rect(imageObject.clipRegion.x, imageObject.clipRegion.y, imageObject.clipRegion.width, imageObject.clipRegion.height);
                 context.clip();
             }
 
             //Draw image
+            if (imageObject.theta != 0)
+            {
+                var centerx = imageObject.left + (imageObject.width/2);
+                var centery = imageObject.top  + (imageObject.height/2);
+                context.translate(centerx, centery)
+                context.rotate(imageObject.theta * Math.PI/180);
+                context.translate(-centerx, -centery);
+            }
             if ((imageObject.width != -1) && (imageObject.height != -1))
                 context.drawImage(img,imageObject.left,imageObject.top, imageObject.width, imageObject.height);
             else
@@ -138,7 +160,10 @@ DoodleImage.prototype.draw = function(context)
 
             //Fire callback function if any included
             if (imageObject.callback)
+            {
+                img.crossOrigin = 'anonymous';      //Fix cross-domain image loading error
                 imageObject.callback();
+            }
 
             context.restore();
         }
@@ -174,10 +199,23 @@ Line.prototype.draw = function (context)
         //Draw line from start point to end point
         context.strokeStyle= this.color;
         context.lineWidth = this.lineWidth;
+        
+        //Rotate line if necessary
+        context.save();
+        if (this.theta != 0)
+        {
+            var contentWidth = this.endX - this.startX;
+            var centerx = this.left + (this.contentWidth/2);
+            var centery = this.top + (this.height/2);
+            context.translate(centerx, centery);
+            context.rotate(this.theta*Math.PI/180);
+            context.translate(-centerx, -centery);
+        }
         context.beginPath();
         context.moveTo(this.startX, this.startY);
         context.lineTo(this.endX, this.endY);
         context.stroke();
+        context.restore();
     }
 };
 
@@ -201,9 +239,21 @@ Rectangle.prototype.draw = function (context)
     {    
         context.strokeStyle= this.color;
         context.lineWidth = this.lineWidth;
+        
+        //Rotate rectangle if necessary
+        context.save();
+        if (this.theta != 0)
+        {
+            var centerx = this.left + (this.width/2);
+            var centery = this.top + (this.height/2);
+            context.translate(centerx, centery);
+            context.rotate(this.theta*Math.PI/180);
+            context.translate(-centerx, -centery);
+        }
         context.beginPath();
         context.rect(this.x,this.y,this.width,this.height);
         context.stroke();
+        context.restore();
     }
 };
 
@@ -228,6 +278,19 @@ Container.prototype.draw = function (context)
     {   
         //Create clipping region for container
         context.save();         
+        
+        //Rotate container if necessary
+        context.save();
+        if (this.theta != 0)
+        {
+            context.save();
+            var centerx = this.left + (this.width/2);
+            var centery = this.top + (this.height/2);
+            context.translate(centerx, centery);
+            context.rotate(this.theta*Math.PI/180)
+            context.translate(-centerx, -centery);
+        }
+
         context.beginPath();
         context.rect(this.left,this.top,this.width,this.height);
 
@@ -244,12 +307,14 @@ Container.prototype.draw = function (context)
             context.fill();
         }
         context.clip();
+        context.restore();
    
         //Draw container children
         for (var i = 0; i < this.children.length; i++)
         {
             this.children[i].left+= this.left;
             this.children[i].top += this.top;
+            //this.children[i].theta = this.theta;
             this.children[i].clipRegion = {'x': this.left, 'y': this.top, 'width': this.width, 'height': this.height};
             this.children[i].draw(context);
         }
