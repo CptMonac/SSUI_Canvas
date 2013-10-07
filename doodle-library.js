@@ -132,6 +132,9 @@ DoodleImage.prototype.draw = function(context)
     {
         var img = new Image();
         var imageObject = this;
+
+        if (this.callback)
+            img.crossOrigin = 'anonymous';
         
         img.onload = function()
         {
@@ -160,11 +163,8 @@ DoodleImage.prototype.draw = function(context)
 
             //Fire callback function if any included
             if (imageObject.callback)
-            {
-                img.crossOrigin = 'anonymous';      //Fix cross-domain image loading error
                 imageObject.callback();
-            }
-
+            
             context.restore();
         }
         img.src = this.src;

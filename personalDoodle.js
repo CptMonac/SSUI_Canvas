@@ -93,7 +93,8 @@ function initializeCanvas(event, from, to, params)
     var phoenixImage = 'https://dl.dropboxusercontent.com/s/oqh5hw92r6q7obt/phoenix.png';
     var biohazardImage = 'https://dl.dropboxusercontent.com/s/goop38ceypd5ti9/biohazard.png'; 
     var crownImage = 'https://dl.dropboxusercontent.com/s/9n61seugw3pe7dh/crown-image.png';
-    var logoImage = new DoodleImage({src: crownImage, left: center+contentWidth+80, width: 400, height: 130, top: 110, callback: onImageLoad});
+    var ninjaImage = 'https://dl.dropboxusercontent.com/s/disu78luddi1gzd/ninja.png'
+    var logoImage = new DoodleImage({src: ninjaImage, left: contentWidth, width: 256, height: 256, top: 20, callback: onImageLoad});
     window.xscale = canvasWidth/(contentWidth+logoImage.width);
     window.yscale = 1;
     bgContext.scale(xscale, yscale);
