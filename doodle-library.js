@@ -138,8 +138,19 @@ DoodleImage.prototype.draw = function(context)
         
         img.onload = function()
         {
-            //Restore clipping region -- it was removed before the image loaded
             context.save();
+            console.log(imageObject);
+            //Restore rotation --it was removed before image loaded
+            if (imageObject.parentRotation !== undefined)
+            {
+                for (var i = 0; i < imageObject.parentRotation.length; i++)
+                {
+                    context.translate(imageObject.parentRotation[i].x, imageObject.parentRotation[i].y);
+                    context.rotate(imageObject.parentRotation[i].theta * Math.PI/180);
+                    context.translate(-imageObject.parentRotation[i].x, -imageObject.parentRotation[i].y);
+                }
+            }
+            //Restore clipping region -- it was removed before the image loaded
             if (imageObject.clipRegion !== undefined)
             { 
                 context.beginPath();
@@ -307,17 +318,40 @@ Container.prototype.draw = function (context)
             context.fill();
         }
         context.clip();
-        context.restore();
    
         //Draw container children
         for (var i = 0; i < this.children.length; i++)
         {
             this.children[i].left+= this.left;
             this.children[i].top += this.top;
-            //this.children[i].theta = this.theta;
             this.children[i].clipRegion = {'x': this.left, 'y': this.top, 'width': this.width, 'height': this.height};
+            //Save rotation context for children elements
+            if ((this.theta != 0) && (this.parentRotation !== undefined))
+            {
+                this.children[i].parentRotation = [];
+                for (var parentContext = 0; parentContext < this.parentRotation.length; parentContext++)
+                {
+                    this.children[i].parentRotation.push(this.parentRotation[i]);   
+                }
+                this.children[i].parentRotation.push({'x': centerx, 'y': centery, 'theta': this.theta});
+            }
+            else if (this.theta != 0)
+            {
+                this.children[i].parentRotation = [];
+                this.children[i].parentRotation.push({'x': centerx, 'y': centery, 'theta': this.theta});
+            }
+            else if (this.parentRotation !== undefined)
+            {
+                this.children[i].parentRotation = [];
+                for (var parentContext = 0; parentContext < this.parentRotation.length; parentContext++)
+                {
+                    this.children[i].parentRotation.push(this.parentRotation[i]);   
+                }
+            }
             this.children[i].draw(context);
         }
+        //Restore context before translation and rotation
+        context.restore();
  
         //Remove container clipping region
         context.restore();
