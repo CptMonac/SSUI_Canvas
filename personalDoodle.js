@@ -84,7 +84,7 @@ function initializeCanvas(event, from, to, params)
     //Load logo image and text onto canvas
     var doodle = new Doodle(bgContext);
     var logoFont = '190px Prociono';
-    var logoContent = 'Ayo Olubeko';
+    var logoContent = 'CptMonac';
     bgContext.font = logoFont;
     var contentWidth = bgContext.measureText(logoContent).width;
     var center = (canvasWidth/2) - (Math.round((contentWidth)/2));
